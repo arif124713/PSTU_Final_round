@@ -6,7 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.money_request import RequestStatus
 from app.models.user import User
-from app.services import request_service, transfer_service
+from app.schemas.scheduled_payment import CreateScheduledPaymentBody
+from app.services import request_service, scheduled_payment_service, transfer_service
 from app.services.deepseek_client import chat_completion
 
 # Per-session chat history, kept in process memory only — never persisted to
@@ -107,6 +108,60 @@ AGENT_TOOLS = [
             "parameters": {"type": "object", "properties": {}},
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_scheduled_payment",
+            "description": (
+                "Set up a recurring or one-time scheduled payment reminder. Call validate_receiver first. "
+                "This does NOT move any money and does NOT require a PIN — it only schedules future "
+                "reminders. The user still has to tap 'Pay Now' and enter their PIN in the app when a "
+                "cycle is actually due; the system never auto-pays. "
+                "For monthly/yearly schedules, day_of_month must be 1-28 (never 29-31, to safely handle "
+                "February). Resolve any relative date the user mentions (e.g. 'in 3 days', 'next Friday') "
+                "into an absolute date yourself using the current date given in the system prompt."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "receiver_id": {"type": "integer", "description": "Receiver's user ID from validate_receiver"},
+                    "label": {"type": "string", "description": "Short label, e.g. 'House Rent'"},
+                    "amount": {"type": "number", "description": "Amount in BDT per cycle, must be positive"},
+                    "frequency": {"type": "string", "enum": ["one_time", "weekly", "monthly", "yearly"]},
+                    "specific_date": {
+                        "type": "string",
+                        "description": "YYYY-MM-DD due date, required when frequency is one_time",
+                    },
+                    "day_of_week": {
+                        "type": "integer",
+                        "description": "0=Sunday..6=Saturday, required when frequency is weekly",
+                    },
+                    "day_of_month": {
+                        "type": "integer",
+                        "description": "1-28, required when frequency is monthly or yearly",
+                    },
+                    "month_of_year": {
+                        "type": "integer",
+                        "description": "1-12, required when frequency is yearly",
+                    },
+                    "reminder_days_before": {
+                        "type": "integer",
+                        "description": "How many days before the due date to send a reminder (default 3)",
+                    },
+                    "note": {"type": "string", "description": "Optional memo, e.g. 'Landlord: Mr. Rahman'"},
+                },
+                "required": ["receiver_id", "label", "amount", "frequency"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_scheduled_payments",
+            "description": "List the user's scheduled payments (active, paused, cancelled, and completed).",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
 ]
 
 
@@ -130,11 +185,17 @@ STRICT SECURITY RULES — NEVER VIOLATE THESE:
     Please enter your PIN in the secure prompt to confirm."
    Do not say anything else about the PIN.
 9. NEVER execute or suggest bypassing the PIN confirmation step.
-10. You are a READ-ONLY agent for all data queries. Only initiate_transfer triggers a write,
-    and even that write is incomplete until the user confirms via PIN on the frontend.
+10. You are a READ-ONLY agent for all data queries. initiate_transfer and create_scheduled_payment are
+    the only writes. initiate_transfer stays incomplete until the user confirms via PIN on the frontend.
+    create_scheduled_payment does NOT need a PIN — it only sets up a reminder, never moves money — so you
+    may call it directly once you have all the required details confirmed with the user.
+11. For create_scheduled_payment, always call validate_receiver first, and resolve any relative date
+    ("next Friday", "in 3 days", "every 1st of the month") into absolute values yourself using the
+    current date below. Never pass day_of_month above 28.
 
 Current authenticated user: {user.id} | {user.full_name}
 Current balance: ৳{float(user.balance)} (always fetch fresh via get_balance — never use a cached value)
+Current date: {datetime.now(timezone.utc).date().isoformat()}
 """
 
 
@@ -213,6 +274,29 @@ async def _run_tool(
         all_requests = await request_service.list_requests(db, user)
         pending = [r.model_dump(mode="json") for r in all_requests if r.status == RequestStatus.pending.value]
         return {"pending_requests": pending}, None
+
+    if name == "create_scheduled_payment":
+        try:
+            body = CreateScheduledPaymentBody(
+                receiver_identifier=str(args["receiver_id"]),
+                label=args["label"],
+                amount=args["amount"],
+                frequency=args["frequency"],
+                specific_date=args.get("specific_date"),
+                day_of_week=args.get("day_of_week"),
+                day_of_month=args.get("day_of_month"),
+                month_of_year=args.get("month_of_year"),
+                reminder_days_before=args.get("reminder_days_before", 3),
+                note=args.get("note"),
+            )
+            result = await scheduled_payment_service.create_scheduled_payment(db, user, body)
+            return result.model_dump(mode="json"), None
+        except Exception as exc:
+            return {"error": str(getattr(exc, "detail", exc))}, None
+
+    if name == "get_scheduled_payments":
+        result = await scheduled_payment_service.list_scheduled_payments(db, user)
+        return result.model_dump(mode="json"), None
 
     return {"error": f"Unknown tool: {name}"}, None
 
