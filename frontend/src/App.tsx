@@ -6,6 +6,9 @@ import { Dashboard } from './pages/Dashboard'
 import { SendMoney } from './pages/SendMoney'
 import { History } from './pages/History'
 import { AgentChat } from './pages/AgentChat'
+import { Scheduled } from './pages/Scheduled'
+import { GroupPayments } from './pages/GroupPayments'
+import { Debts } from './pages/Debts'
 
 function RequireAuth({ children }: { children: React.ReactElement }) {
   const token = useAuthStore((s) => s.accessToken)
@@ -48,6 +51,30 @@ function App() {
         element={
           <RequireAuth>
             <AgentChat />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/scheduled"
+        element={
+          <RequireAuth>
+            <Scheduled />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/groups"
+        element={
+          <RequireAuth>
+            <GroupPayments />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/debts"
+        element={
+          <RequireAuth>
+            <Debts />
           </RequireAuth>
         }
       />

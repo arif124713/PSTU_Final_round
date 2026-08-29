@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { api, apiErrorMessage } from '../lib/api'
-import { Card, NavPill, TransactionAmount } from '../components/ui'
+import { TransactionAmount } from '../components/ui'
+import { GlassCard, GlassNav, PageShell } from '../components/glass'
 
 interface TxItem {
   reference_id: string
@@ -27,25 +27,11 @@ export function History() {
   }, [])
 
   return (
-    <div className="min-h-screen px-4 pb-16 pt-8">
-      <NavPill>
-        <span className="text-[16px] font-semibold text-midnight-navy">MoneyMove</span>
-        <Link to="/dashboard" className="text-[16px] font-semibold text-midnight-navy">
-          Dashboard
-        </Link>
-        <Link to="/send" className="text-[16px] font-semibold text-midnight-navy">
-          Send
-        </Link>
-        <Link to="/history" className="text-[16px] font-semibold text-electric-blue">
-          History
-        </Link>
-        <Link to="/agent" className="text-[16px] font-semibold text-midnight-navy">
-          Assistant
-        </Link>
-      </NavPill>
+    <PageShell>
+      <GlassNav active="History" />
 
-      <div className="mx-auto mt-12 max-w-2xl">
-        <Card>
+      <div className="mx-auto mt-10 max-w-2xl">
+        <GlassCard className="p-6">
           <h1 className="text-[32px] font-bold tracking-[-0.96px] text-midnight-navy">Transaction history</h1>
           {loading && <p className="mt-4 text-[16px] text-dusk">Loading…</p>}
           {error && <p className="mt-4 text-[14px] text-red-500">{error}</p>}
@@ -65,8 +51,8 @@ export function History() {
               </div>
             ))}
           </div>
-        </Card>
+        </GlassCard>
       </div>
-    </div>
+    </PageShell>
   )
 }

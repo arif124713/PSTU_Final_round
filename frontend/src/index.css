@@ -52,14 +52,128 @@
 }
 
 body {
-  background: var(--color-fog-white);
+  background:
+    radial-gradient(1100px 760px at 6% -12%, rgba(69, 154, 248, 0.20), transparent 60%),
+    radial-gradient(980px 700px at 108% 4%, rgba(55, 83, 144, 0.20), transparent 55%),
+    radial-gradient(900px 900px at 50% 118%, rgba(120, 141, 186, 0.22), transparent 60%),
+    var(--color-fog-white);
+  background-attachment: fixed;
   color: var(--color-midnight-navy);
   font-family: var(--font-gt-walsheim-pro);
   font-weight: 400;
   margin: 0;
+  min-height: 100vh;
+}
+
+/* Drifting aurora blobs — give the frosted glass something to refract */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  border-radius: 9999px;
+  filter: blur(90px);
+  pointer-events: none;
+  will-change: transform;
+}
+body::before {
+  width: 46vw;
+  height: 46vw;
+  top: -14vw;
+  left: -12vw;
+  background: radial-gradient(circle at 30% 30%, rgba(69, 154, 248, 0.55), rgba(69, 154, 248, 0) 70%);
+  animation: aurora-drift-a 24s ease-in-out infinite alternate;
+}
+body::after {
+  width: 44vw;
+  height: 44vw;
+  bottom: -16vw;
+  right: -10vw;
+  background: radial-gradient(circle at 60% 60%, rgba(120, 141, 186, 0.5), rgba(120, 141, 186, 0) 70%);
+  animation: aurora-drift-b 30s ease-in-out infinite alternate;
+}
+
+@keyframes aurora-drift-a {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to   { transform: translate3d(8vw, 6vw, 0) scale(1.15); }
+}
+@keyframes aurora-drift-b {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to   { transform: translate3d(-7vw, -5vw, 0) scale(1.1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before, body::after { animation: none; }
 }
 
 #root {
+  position: relative;
+  z-index: 1;
   max-width: 1200px;
   margin: 0 auto;
+}
+
+/* ── Liquid-glass surface ─────────────────────────────────────────────── */
+.glass-panel {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.40));
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 10px 30px rgba(32, 41, 76, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.glass-card {
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  transition:
+    transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+    background 0.4s ease;
+}
+
+/* Cursor-tracking sheen — the Apple "spotlight follows the pointer" feel */
+.glass-card--interactive::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    320px circle at var(--mx, 50%) var(--my, -20%),
+    rgba(255, 255, 255, 0.55),
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+.glass-card--interactive:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 26px 60px rgba(32, 41, 76, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+.glass-card--interactive:hover::before {
+  opacity: 1;
+}
+
+.glass-input {
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 12px 16px;
+  font-size: 15px;
+  color: var(--color-midnight-navy);
+  outline: none;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+.glass-input::placeholder { color: var(--color-smoke); }
+.glass-input:focus {
+  border-color: var(--color-electric-blue);
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 0 4px rgba(69, 154, 248, 0.15);
 }

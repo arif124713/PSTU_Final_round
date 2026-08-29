@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { api, apiErrorMessage } from '../lib/api'
 import { useAuthStore } from '../store/authStore'
-import { Card, Input, NavPill } from '../components/ui'
+import { Card, Input } from '../components/ui'
+import { GlassNav, PageShell } from '../components/glass'
 import { PinPad } from '../components/PinPad'
 
 interface ChatMessage {
@@ -76,24 +76,10 @@ export function AgentChat() {
   }
 
   return (
-    <div className="min-h-screen px-4 pb-16 pt-8">
-      <NavPill>
-        <span className="text-[16px] font-semibold text-midnight-navy">MoneyMove</span>
-        <Link to="/dashboard" className="text-[16px] font-semibold text-midnight-navy">
-          Dashboard
-        </Link>
-        <Link to="/send" className="text-[16px] font-semibold text-midnight-navy">
-          Send
-        </Link>
-        <Link to="/history" className="text-[16px] font-semibold text-midnight-navy">
-          History
-        </Link>
-        <Link to="/agent" className="text-[16px] font-semibold text-electric-blue">
-          Assistant
-        </Link>
-      </NavPill>
+    <PageShell>
+      <GlassNav active="Assistant" />
 
-      <div className="mx-auto mt-12 max-w-2xl">
+      <div className="mx-auto mt-10 max-w-2xl">
         <Card className="flex h-[70vh] flex-col">
           <h1 className="text-[24px] font-semibold tracking-[-0.72px] text-midnight-navy">AI Assistant</h1>
           <p className="text-[14px] text-smoke">Ask me to send money, check your balance, or review your history.</p>
@@ -150,6 +136,6 @@ export function AgentChat() {
           error={error}
         />
       )}
-    </div>
+    </PageShell>
   )
 }
