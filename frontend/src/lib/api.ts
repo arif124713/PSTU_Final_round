@@ -6,9 +6,11 @@ export const api = axios.create({
 })
 
 api.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().accessToken
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+  if (!config.headers.Authorization) {
+    const token = useAuthStore.getState().accessToken
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
   }
   return config
 })
