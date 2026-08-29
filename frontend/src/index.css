@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme {
+  /* Colors */
+  --color-midnight-navy: #20294c;
+  --color-cornflower-steel: #375390;
+  --color-electric-blue: #459af8;
+  --color-fog-white: #f0f1f5;
+  --color-pure-white: #ffffff;
+  --color-silver-lining: #c7cbdb;
+  --color-mist-gray: #dddfe9;
+  --color-smoke: #979db5;
+  --color-dusk: #676b89;
+  --color-abyss: #042939;
+  --color-voltage-yellow: #ffff00;
+  --color-hyacinth: #788dba;
+
+  /* Typography */
+  --font-gt-walsheim-pro: 'GT Walsheim Pro', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-gt-america: 'GT America', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  --text-tag: 10px;
+  --text-caption: 14px;
+  --text-body-sm: 16px;
+  --text-body: 18px;
+  --text-subheading: 24px;
+  --text-heading-sm: 32px;
+  --text-heading: 42px;
+  --text-heading-lg: 64px;
+  --text-display: 100px;
+
+  /* Spacing */
+  --spacing-8: 8px;
+  --spacing-16: 16px;
+  --spacing-24: 24px;
+  --spacing-32: 32px;
+  --spacing-48: 48px;
+
+  /* Border Radius */
+  --radius-cards: 12px;
+  --radius-images: 16px;
+  --radius-panels: 24px;
+  --radius-nav: 24px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-xl: rgba(32, 41, 76, 0.12) 0px 9px 25px 0px;
+  --shadow-md: rgba(32, 41, 76, 0.12) 0px 6px 16px 0px, rgba(32, 41, 76, 0.09) 0px 1px 5px 0px;
+  --shadow-md-2: rgba(32, 41, 76, 0.07) 0px 4px 11px 0px, rgba(32, 41, 76, 0.12) 0px 1px 3px 0px;
+  --shadow-subtle: rgba(255, 255, 255, 0.53) 0px 1px 0px 0px;
+  --shadow-sm: rgba(32, 41, 76, 0.1) 0px 1px 4px 0px;
+}
+
+body {
+  background: var(--color-fog-white);
+  color: var(--color-midnight-navy);
+  font-family: var(--font-gt-walsheim-pro);
+  font-weight: 400;
+  margin: 0;
+}
+
+#root {
+  max-width: 1200px;
+  margin: 0 auto;
+}
