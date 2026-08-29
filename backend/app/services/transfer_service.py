@@ -11,7 +11,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.core.security import verify_secret
 from app.models.notification import NotificationType
-from app.models.transaction import DraftStatus, InitiatedVia, Transaction, TransactionDraft, TransactionStatus
+from app.models.transaction import (
+    DraftStatus,
+    InitiatedVia,
+    Transaction,
+    TransactionDraft,
+    TransactionStatus,
+    TransactionType,
+)
 from app.models.user import User
 from app.schemas.transaction import (
     Pagination,
@@ -88,6 +95,7 @@ async def _execute_atomic_transfer(
     initiated_via: InitiatedVia,
     flagged: bool,
     flag_reason: str | None,
+    tx_type: TransactionType = TransactionType.transfer,
 ) -> Transaction:
     """The critical section: pessimistic row lock + debit/credit + insert, all-or-nothing."""
     sender = (
@@ -113,6 +121,7 @@ async def _execute_atomic_transfer(
         amount=amount,
         note=note,
         status=TransactionStatus.completed,
+        type=tx_type,
         initiated_via=initiated_via,
         flagged=flagged,
         flag_reason=flag_reason,
@@ -136,6 +145,8 @@ async def send_money(
     note: str | None,
     extra_confirmed: bool,
     initiated_via: InitiatedVia = InitiatedVia.web,
+    tx_type: TransactionType = TransactionType.transfer,
+    background_tasks=None,
 ) -> SendMoneyResponse:
     # Step 1: idempotency
     idem_key = f"idem:{current_user.id}:{idempotency_key}"
@@ -168,7 +179,7 @@ async def send_money(
 
     try:
         tx = await _execute_atomic_transfer(
-            db, current_user.id, receiver.id, amount_decimal, note, initiated_via, flagged, flag_reason
+            db, current_user.id, receiver.id, amount_decimal, note, initiated_via, flagged, flag_reason, tx_type
         )
     except HTTPException:
         await write_audit_log(db, "TRANSFER_FAILED", actor_id=current_user.id, target_id=receiver.id)
@@ -184,12 +195,20 @@ async def send_money(
         reference_id=tx.reference_id,
         amount=float(tx.amount),
         receiver_name=receiver.full_name,
+        receiver_id=receiver.id,
         new_balance=float((await db.execute(select(User.balance).where(User.id == current_user.id))).scalar_one()),
         status="completed",
         timestamp=tx.completed_at.isoformat() if tx.completed_at else datetime.now(timezone.utc).isoformat(),
     )
 
     await redis.setex(idem_key, 86400, response.model_dump_json())
+
+    # After a successful credit, settle any pending group-payment debts the
+    # receiver owes (FIFO, partial). Runs off the request path.
+    if background_tasks is not None:
+        from app.services.debt_service import settle_pending_debts_bg
+
+        background_tasks.add_task(settle_pending_debts_bg, receiver.id)
 
     await send_notification(
         db, receiver.id, NotificationType.money_received,
@@ -239,7 +258,9 @@ async def create_draft(
     return draft
 
 
-async def confirm_draft(db: AsyncSession, redis: Redis, current_user: User, draft_id: str, pin: str) -> SendMoneyResponse:
+async def confirm_draft(
+    db: AsyncSession, redis: Redis, current_user: User, draft_id: str, pin: str, background_tasks=None
+) -> SendMoneyResponse:
     draft = (
         await db.execute(select(TransactionDraft).where(TransactionDraft.draft_id == draft_id))
     ).scalar_one_or_none()
@@ -262,6 +283,11 @@ async def confirm_draft(db: AsyncSession, redis: Redis, current_user: User, draf
     draft.status = DraftStatus.confirmed
     await db.commit()
 
+    if background_tasks is not None:
+        from app.services.debt_service import settle_pending_debts_bg
+
+        background_tasks.add_task(settle_pending_debts_bg, draft.receiver_id)
+
     await fraud_service.set_post_transfer_state(redis, draft.sender_id, draft.receiver_id, float(draft.amount))
 
     receiver = (await db.execute(select(User).where(User.id == draft.receiver_id))).scalar_one()
@@ -278,6 +304,7 @@ async def confirm_draft(db: AsyncSession, redis: Redis, current_user: User, draf
         reference_id=tx.reference_id,
         amount=float(tx.amount),
         receiver_name=receiver.full_name,
+        receiver_id=receiver.id,
         new_balance=float(sender_balance),
         status="completed",
         timestamp=tx.completed_at.isoformat() if tx.completed_at else datetime.now(timezone.utc).isoformat(),

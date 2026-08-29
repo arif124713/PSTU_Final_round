@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -33,6 +33,7 @@ async def validate_receiver(
 @router.post("/send", response_model=SendMoneyResponse)
 async def send_money(
     body: SendMoneyRequest,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -48,17 +49,21 @@ async def send_money(
         body.note,
         body.extra_confirmed,
         InitiatedVia.web,
+        background_tasks=background_tasks,
     )
 
 
 @router.post("/confirm", response_model=ConfirmDraftResponse)
 async def confirm_draft(
     body: ConfirmDraftRequest,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     redis = await get_redis()
-    result = await transfer_service.confirm_draft(db, redis, current_user, body.draft_id, body.pin)
+    result = await transfer_service.confirm_draft(
+        db, redis, current_user, body.draft_id, body.pin, background_tasks
+    )
     return ConfirmDraftResponse(status=result.status, reference_id=result.reference_id, new_balance=result.new_balance)
 
 

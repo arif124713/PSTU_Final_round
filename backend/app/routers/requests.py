@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -40,11 +40,14 @@ async def list_all(
 async def accept(
     request_id: int,
     body: AcceptRequestBody,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     redis = await get_redis()
-    return await request_service.accept_request(db, redis, current_user, request_id, body.pin)
+    return await request_service.accept_request(
+        db, redis, current_user, request_id, body.pin, background_tasks
+    )
 
 
 @router.post("/{request_id}/decline")

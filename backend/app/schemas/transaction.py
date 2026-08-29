@@ -33,6 +33,7 @@ class SendMoneyResponse(BaseModel):
     reference_id: str
     amount: float
     receiver_name: str
+    receiver_id: int | None = None
     new_balance: float
     status: str
     timestamp: str
