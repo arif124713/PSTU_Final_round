@@ -6,7 +6,7 @@ sqlalchemy>=2.0
 aiomysql
 alembic
 redis
-celery
+celery[redis]
 python-jose[cryptography]
 bcrypt
 httpx

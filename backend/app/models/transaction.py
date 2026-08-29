@@ -20,12 +20,17 @@ class TransactionType(str, enum.Enum):
     transfer = "transfer"
     request_fulfillment = "request_fulfillment"
     split_fulfillment = "split_fulfillment"
+    scheduled_payment = "scheduled_payment"
+    group_payment = "group_payment"
+    group_payment_refund = "group_payment_refund"
+    debt_settlement = "debt_settlement"
 
 
 class InitiatedVia(str, enum.Enum):
     web = "web"
     mobile = "mobile"
     ai_agent = "ai_agent"
+    system = "system"
 
 
 class Transaction(Base):

@@ -17,6 +17,27 @@ class NotificationType(str, enum.Enum):
     ticket_update = "ticket_update"
     security_alert = "security_alert"
     system = "system"
+    # Scheduled payments
+    scheduled_reminder = "scheduled_reminder"
+    scheduled_due_today = "scheduled_due_today"
+    scheduled_paid = "scheduled_paid"
+    scheduled_missed = "scheduled_missed"
+    scheduled_failed = "scheduled_failed"
+    # Group payments
+    group_invite = "group_invite"
+    group_member_paid = "group_member_paid"
+    group_member_agreed_debt = "group_member_agreed_debt"
+    group_member_declined = "group_member_declined"
+    group_invite_agreed = "group_invite_agreed"
+    group_invite_agreed_debt = "group_invite_agreed_debt"
+    group_debt_reminder = "group_debt_reminder"
+    group_debt_auto_paid_partial = "group_debt_auto_paid_partial"
+    group_debt_fully_paid = "group_debt_fully_paid"
+    group_debt_cancelled = "group_debt_cancelled"
+    group_completed = "group_completed"
+    group_cancelled = "group_cancelled"
+    group_expired = "group_expired"
+    group_member_expired = "group_member_expired"
 
 
 class Notification(Base):

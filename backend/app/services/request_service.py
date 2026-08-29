@@ -67,7 +67,9 @@ async def _get_owned_request(db: AsyncSession, request_id: int, payer_id: int) -
     return req
 
 
-async def accept_request(db: AsyncSession, redis: Redis, payer: User, request_id: int, pin: str):
+async def accept_request(
+    db: AsyncSession, redis: Redis, payer: User, request_id: int, pin: str, background_tasks=None
+):
     req = await _get_owned_request(db, request_id, payer.id)
     requester = (await db.execute(select(User).where(User.id == req.requester_id))).scalar_one()
 
@@ -80,6 +82,7 @@ async def accept_request(db: AsyncSession, redis: Redis, payer: User, request_id
         note=f"Paid request: {req.reason or ''}".strip(),
         extra_confirmed=True,
         initiated_via=InitiatedVia.web,
+        background_tasks=background_tasks,
     )
 
     req.status = RequestStatus.accepted

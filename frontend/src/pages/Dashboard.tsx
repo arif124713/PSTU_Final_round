@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api, apiErrorMessage } from '../lib/api'
 import { useAuthStore } from '../store/authStore'
-import { Button, Card, NavPill, TransactionAmount } from '../components/ui'
+import { TransactionAmount } from '../components/ui'
+import { GlassButton, GlassCard, GlassNav, Money, PageShell } from '../components/glass'
 
 interface TxItem {
   reference_id: string
@@ -14,11 +15,17 @@ interface TxItem {
   created_at: string
 }
 
+const QUICK_LINKS: { to: string; title: string; desc: string }[] = [
+  { to: '/send', title: 'Send money', desc: 'Transfer with PIN confirmation' },
+  { to: '/scheduled', title: 'Scheduled', desc: 'Recurring payment reminders' },
+  { to: '/groups', title: 'Group split', desc: 'Split a bill with friends' },
+  { to: '/debts', title: 'Debts', desc: 'Auto-settling shares' },
+]
+
 export function Dashboard() {
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
   const updateBalance = useAuthStore((s) => s.updateBalance)
-  const logout = useAuthStore((s) => s.logout)
   const [transactions, setTransactions] = useState<TxItem[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -39,70 +46,59 @@ export function Dashboard() {
       }
     }
     load()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  function handleLogout() {
-    logout()
-    navigate('/login')
-  }
+  }, [updateBalance])
 
   return (
-    <div className="min-h-screen px-4 pb-16 pt-8">
-      <NavPill>
-        <span className="text-[16px] font-semibold text-midnight-navy">MoneyMove</span>
-        <Link to="/dashboard" className="text-[16px] font-semibold text-electric-blue">
-          Dashboard
-        </Link>
-        <Link to="/send" className="text-[16px] font-semibold text-midnight-navy">
-          Send
-        </Link>
-        <Link to="/history" className="text-[16px] font-semibold text-midnight-navy">
-          History
-        </Link>
-        <Link to="/agent" className="text-[16px] font-semibold text-midnight-navy">
-          Assistant
-        </Link>
-        <button onClick={handleLogout} className="text-[16px] font-semibold text-cornflower-steel">
-          Log out
-        </button>
-      </NavPill>
+    <PageShell>
+      <GlassNav active="Dashboard" />
 
-      <div className="mx-auto mt-12 flex max-w-2xl flex-col gap-6">
-        <Card>
-          <p className="text-[14px] uppercase tracking-[0.4px] text-smoke">Balance</p>
-          <p className="mt-2 text-[64px] font-bold leading-[0.85] tracking-[-2.56px] text-midnight-navy">
-            ৳{(user?.balance ?? 0).toLocaleString('en-BD', { minimumFractionDigits: 2 })}
-          </p>
-          <p className="mt-2 text-[18px] text-dusk">Welcome back, {user?.full_name}</p>
-          <div className="mt-6 flex gap-3">
-            <Button onClick={() => navigate('/send')}>Send money</Button>
-            <Button variant="outlined" onClick={() => navigate('/history')}>
+      <div className="mx-auto mt-10 flex max-w-3xl flex-col gap-6">
+        <GlassCard interactive className="p-7">
+          <p className="text-[13px] uppercase tracking-[0.4px] text-smoke">Balance</p>
+          <Money
+            value={user?.balance ?? 0}
+            className="mt-2 block text-[60px] font-bold leading-[0.9] tracking-[-2.4px] text-midnight-navy"
+          />
+          <p className="mt-2 text-[17px] text-dusk">Welcome back, {user?.full_name}</p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <GlassButton onClick={() => navigate('/send')}>Send money</GlassButton>
+            <GlassButton variant="glass" onClick={() => navigate('/history')}>
               View history
-            </Button>
+            </GlassButton>
           </div>
-        </Card>
+        </GlassCard>
 
-        <Card>
-          <h2 className="text-[24px] font-semibold tracking-[-0.72px] text-midnight-navy">Recent activity</h2>
-          {loading && <p className="mt-4 text-[16px] text-dusk">Loading…</p>}
-          {error && <p className="mt-4 text-[14px] text-red-500">{error}</p>}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {QUICK_LINKS.map((q) => (
+            <Link key={q.to} to={q.to}>
+              <GlassCard interactive className="h-full p-5">
+                <p className="text-[16px] font-semibold text-midnight-navy">{q.title}</p>
+                <p className="mt-1 text-[13px] text-dusk">{q.desc}</p>
+              </GlassCard>
+            </Link>
+          ))}
+        </div>
+
+        <GlassCard className="p-6">
+          <h2 className="text-[22px] font-semibold tracking-[-0.6px] text-midnight-navy">Recent activity</h2>
+          {loading && <p className="mt-4 text-[15px] text-dusk">Loading…</p>}
+          {error && <p className="mt-4 text-[14px] text-rose-600">{error}</p>}
           {!loading && transactions.length === 0 && (
-            <p className="mt-4 text-[16px] text-dusk">No transactions yet.</p>
+            <p className="mt-4 text-[15px] text-dusk">No transactions yet.</p>
           )}
-          <div className="mt-4 flex flex-col divide-y divide-silver-lining">
+          <div className="mt-4 flex flex-col divide-y divide-white/50">
             {transactions.map((tx) => (
               <div key={tx.reference_id} className="flex items-center justify-between py-3">
                 <div>
-                  <p className="text-[16px] font-medium text-midnight-navy">{tx.counterparty_name}</p>
-                  <p className="text-[14px] text-dusk">{tx.note || tx.status}</p>
+                  <p className="text-[15px] font-medium text-midnight-navy">{tx.counterparty_name}</p>
+                  <p className="text-[13px] text-dusk">{tx.note || tx.status}</p>
                 </div>
                 <TransactionAmount amount={tx.amount} direction={tx.direction} />
               </div>
             ))}
           </div>
-        </Card>
+        </GlassCard>
       </div>
-    </div>
+    </PageShell>
   )
 }

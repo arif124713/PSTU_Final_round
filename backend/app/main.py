@@ -4,7 +4,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.routers import admin, agent, auth, dashboard, notifications, requests, support, transactions, users
+from app.routers import (
+    admin,
+    agent,
+    auth,
+    dashboard,
+    debts,
+    group_payments,
+    notifications,
+    requests,
+    scheduled_payments,
+    support,
+    transactions,
+    users,
+)
 
 app = FastAPI(title="MoneyMove API", version="0.1.0")
 
@@ -41,3 +54,6 @@ app.include_router(notifications.router)
 app.include_router(support.router)
 app.include_router(admin.router)
 app.include_router(agent.router)
+app.include_router(scheduled_payments.router)
+app.include_router(group_payments.router)
+app.include_router(debts.router)
